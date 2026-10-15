@@ -1,1 +1,63 @@
-file1
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['DEV', 'QA', 'STAGING'],
+            description: 'Select the deployment environment'
+        )
+    }
+
+    stages {
+        stage('Java-Project') {
+            steps {
+                echo 'Cloning...'
+                git branch: 'main',
+                    url: 'https://github.com/sreekantht62/Java-project.git'
+            }
+        }
+
+        stage('Build-job') {
+            steps {
+                echo 'Building...'
+                sh 'mvn compile'
+            }
+        }
+
+        stage('Test-job') {
+            steps {
+                echo 'Testing...'
+                sh 'mvn test'
+            }
+        }
+
+        stage('Deploy-job') {
+            steps {
+                script {
+                    if (params.ENVIRONMENT == 'DEV') {
+                        echo 'Deploying to DEV'
+                        sh 'mvn clean package'
+                    } else if (params.ENVIRONMENT == 'QA') {
+                        echo 'Deploying to QA'
+                        sh 'mvn clean package'
+                    } else if (params.ENVIRONMENT == 'STAGING') {
+                        echo 'Deploying to STAGING'
+                        sh 'mvn clean package'
+                    } else {
+                        error "Invalid environment: ${params.ENVIRONMENT}"
+                    }
+                }
+            }
+        }
+
+        stage('Archive-WAR') {
+            steps {
+                archiveArtifacts(
+                    artifacts: 'target/*.war',
+                    followSymlinks: false
+                )
+            }
+        }
+    }
+}
